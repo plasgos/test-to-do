@@ -9,6 +9,9 @@ Berikut adalah daftar endpoint untuk manajemen **Tasks API**.
 | **GET**    | `/api/tasks`                | Ambil semua tasks                                            |
 | **GET**    | `/api/tasks/:id`            | Ambil task berdasarkan ID                                    |
 | **GET**    | `/api/tasks/status/:status` | Filter tasks berdasarkan status (`to_do`, `process`, `done`) |
+| **GET**    | `/api/tasks/tag/:tagFilter` | tasks berdasarkan tag tertentu                               |
+| **GET**    | `/api/tasks/overdue`        | Ambil semua tasks yang sudah lewat deadline                  |
+| **GET**    | `/api/tasks/today`          | Ambil tasks dengan deadline hari ini                         |
 | **POST**   | `/api/tasks`                | Buat task baru                                               |
 | **PUT**    | `/api/tasks/:id`            | Update task lengkap                                          |
 | **PATCH**  | `/api/tasks/:id/status`     | Update status task saja                                      |
