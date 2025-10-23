@@ -8,6 +8,15 @@ router.get("/", taskController.getAllTasks);
 // Get tasks by status
 router.get("/status/:status", taskController.getTasksByStatus);
 
+// Get tasks by tag
+router.get("/tag/:tag", taskController.getTasksByTag);
+
+// Get overdue tasks
+router.get("/overdue", taskController.getOverdueTasks);
+
+// Get today's tasks
+router.get("/today", taskController.getTodayTasks);
+
 // Get task by ID
 router.get("/:id", taskController.getTaskById);
 

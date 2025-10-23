@@ -96,7 +96,13 @@ exports.getTasksByStatus = async (req, res) => {
 // POST: Buat task baru
 exports.createTask = async (req, res) => {
   try {
-    const { title, description, status = "to_do" } = req.body;
+    const {
+      title,
+      description,
+      status = "to_do",
+      tags = [],
+      dueDate,
+    } = req.body;
 
     if (!title) {
       return res.status(400).json({
@@ -113,12 +119,23 @@ exports.createTask = async (req, res) => {
       });
     }
 
+    // Validasi dueDate jika ada
+    if (dueDate && isNaN(Date.parse(dueDate))) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid dueDate format. Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss)",
+      });
+    }
+
     const tasks = await readTasks();
     const newTask = {
       id: Date.now().toString(),
       title,
       description: description || "",
       status,
+      tags: Array.isArray(tags) ? tags : [],
+      dueDate: dueDate || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -144,7 +161,7 @@ exports.createTask = async (req, res) => {
 exports.updateTask = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, status } = req.body;
+    const { title, description, status, tags, dueDate } = req.body;
 
     const tasks = await readTasks();
     const taskIndex = tasks.findIndex((t) => t.id === id);
@@ -166,12 +183,28 @@ exports.updateTask = async (req, res) => {
       }
     }
 
+    // Validasi dueDate jika ada
+    if (dueDate && dueDate !== null && isNaN(Date.parse(dueDate))) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid dueDate format. Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss)",
+      });
+    }
+
     const updatedTask = {
       ...tasks[taskIndex],
       title: title || tasks[taskIndex].title,
       description:
         description !== undefined ? description : tasks[taskIndex].description,
       status: status || tasks[taskIndex].status,
+      tags:
+        tags !== undefined
+          ? Array.isArray(tags)
+            ? tags
+            : []
+          : tasks[taskIndex].tags,
+      dueDate: dueDate !== undefined ? dueDate : tasks[taskIndex].dueDate,
       updatedAt: new Date().toISOString(),
     };
 
@@ -269,6 +302,77 @@ exports.deleteTask = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error deleting task",
+      error: error.message,
+    });
+  }
+};
+
+// GET: Ambil tasks berdasarkan tag
+exports.getTasksByTag = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    const tasks = await readTasks();
+    const filteredTasks = tasks.filter((t) => t.tags && t.tags.includes(tag));
+
+    res.json({
+      success: true,
+      data: filteredTasks,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error reading tasks",
+      error: error.message,
+    });
+  }
+};
+
+// GET: Ambil tasks yang overdue
+exports.getOverdueTasks = async (req, res) => {
+  try {
+    const tasks = await readTasks();
+    const now = new Date();
+    const overdueTasks = tasks.filter((t) => {
+      if (!t.dueDate || t.status === "done") return false;
+      return new Date(t.dueDate) < now;
+    });
+
+    res.json({
+      success: true,
+      data: overdueTasks,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error reading tasks",
+      error: error.message,
+    });
+  }
+};
+
+// GET: Ambil tasks dengan due date hari ini
+exports.getTodayTasks = async (req, res) => {
+  try {
+    const tasks = await readTasks();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayTasks = tasks.filter((t) => {
+      if (!t.dueDate) return false;
+      const dueDate = new Date(t.dueDate);
+      return dueDate >= today && dueDate < tomorrow;
+    });
+
+    res.json({
+      success: true,
+      data: todayTasks,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error reading tasks",
       error: error.message,
     });
   }
